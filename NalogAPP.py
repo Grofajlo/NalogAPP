@@ -191,25 +191,28 @@ def menu_3():
     frame4.grid(row=0, column=0, padx=3, pady=3, sticky="news")  
     # etikete
     od_label = ttkb.Label(frame4, text="DATUM OD", bootstyle=SUCCESS, width=15)
-    od_label.grid(row=1,column=0, sticky="w", pady=3, padx=3)
+    od_label.grid(row=2,column=0, sticky="w", pady=3, padx=3)
     do_label = ttkb.Label(frame4, text="DATUM DO", bootstyle=SUCCESS, width=15)
-    do_label.grid(row=2, column=0, sticky="w", pady=3, padx=3)
+    do_label.grid(row=3, column=0, sticky="w", pady=3, padx=3)
     sek_label = ttkb.Label(frame4, text="SEKTOR:", bootstyle="success", width=15)
     sek_label.grid(row=0, column=0, sticky="w", pady=3, padx=3)
+    aprox_klijent_label = ttkb.Label(frame4, text="KLIJENT", bootstyle="success", width=15)
+    aprox_klijent_label.grid(row=1,column=0, sticky="w", pady=3, padx=3)
     # deo za unos
     start_date = ttkb.DateEntry(frame4, width=15, bootstyle="success", dateformat="%d.%m.%Y")
-    start_date.grid(row=1, column=1, padx=8, pady=3, sticky="w")
+    start_date.grid(row=2, column=1, padx=8, pady=3, sticky="w")
     end_date = ttkb.DateEntry(frame4, width=15, bootstyle="success", dateformat="%d.%m.%Y")
-    end_date.grid(row=2, column=1, padx=8, pady=3, sticky="w")
+    end_date.grid(row=3, column=1, padx=8, pady=3, sticky="w")
     sek_entry = ttkb.Combobox(frame4, width=15, bootstyle="success", values=["KT", "SPI", "SV"])
     sek_entry.grid(row=0, column=1, sticky="w", pady=3, padx=8)
-    aprox_klijent = ttkb.Entry(frame4, width=15, bootstyle="success")
-    aprox_klijent.grid(row=0, column=2, padx=8, pady=3, sticky="w")
+    aprox_klijent = ttkb.Entry(frame4, width=17, bootstyle="success")
+    aprox_klijent.grid(row=1, column=1, padx=8, pady=3, sticky="w")
+    aprox_klijent.insert(0, "približan naziv")
     # dugmići
     kreiraj = ttkb.Button(frame4, text="KREIRAJ IZVEŠTAJ", width=15, bootstyle=SUCCESS, command=sta_je_radjeno)    
-    kreiraj.grid(row=3, column=0, pady=15, padx=4)
+    kreiraj.grid(row=4, column=0, pady=15, padx=4)
     izađi = ttkb.Button(frame4, text="IZAĐI", width=15, bootstyle=SUCCESS, command=close_toplevel_tree)
-    izađi.grid(row=3, column=1, pady=15, padx=4)
+    izađi.grid(row=4, column=1, pady=15, padx=4)
 
 #  meni za mesečni izveštaj
 def menu_2():
@@ -255,7 +258,7 @@ def sta_je_radjeno():
     conn = sq.connect("Evidencija.db")
     
     # List of tables to check
-    tables = ["Evidencija2024", "Evidencija2025"]
+    tables = [f"Evidencija{current_Y-1}", f"Evidencija{current_Y}"]
     all_data = []
     
     for table_name in tables:
