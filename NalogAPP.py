@@ -19,7 +19,7 @@ from docx.oxml import OxmlElement
 from docx.shared import RGBColor
 from datetime import date
 
-#STABILNA VERZIJA APLIKACIJE ZA IZDAVANJE NALOGA
+
 
 current_Y = date.today().year
 
@@ -184,7 +184,7 @@ def menu_4():
     
 # meni za sortiranje aktivnosti po lokacijama klijenta za izabrani period
 def menu_3():
-    global  lvl2_3root, start_date, end_date, sek_entry
+    global  lvl2_3root, start_date, end_date, sek_entry, aprox_klijent
     lvl2_3root = ttkb.Toplevel()
     lvl2_3root.title("IZVEŠTAJ ZA PERIOD")
     frame4 = ttkb.LabelFrame(lvl2_3root, bootstyle=SUCCESS)
@@ -203,6 +203,8 @@ def menu_3():
     end_date.grid(row=2, column=1, padx=8, pady=3, sticky="w")
     sek_entry = ttkb.Combobox(frame4, width=15, bootstyle="success", values=["KT", "SPI", "SV"])
     sek_entry.grid(row=0, column=1, sticky="w", pady=3, padx=8)
+    aprox_klijent = ttkb.Entry(frame4, width=15, bootstyle="success")
+    aprox_klijent.grid(row=0, column=2, padx=8, pady=3, sticky="w")
     # dugmići
     kreiraj = ttkb.Button(frame4, text="KREIRAJ IZVEŠTAJ", width=15, bootstyle=SUCCESS, command=sta_je_radjeno)    
     kreiraj.grid(row=3, column=0, pady=15, padx=4)
@@ -230,15 +232,13 @@ def menu_2():
     exitlvl2_btn.grid(row=4, column=1, padx=10, pady=10, sticky="news")
 # pravi izveštaj za period (poseban excel u kojem su sve adrese i šta je na tim adresama rađeno)
 def sta_je_radjeno():
-    # Connect to the SQLite3 database
-    table_name = get_table_name()
-    conn = sq.connect("Evidencija.db")
-    c = conn.cursor()
-
+    
     # Get the dates from the DateEntry widgets
     od = start_date.entry.get()
     do = end_date.entry.get()
     sektor = sek_entry.get()
+    klijent_filter = aprox_klijent.get()  # New client filter field
+    
     # Parse the dates into a format SQLite can understand (YYYY-MM-DD)
     try:
         od = parser.parse(od, dayfirst=True).strftime("%Y-%m-%d")
@@ -246,52 +246,103 @@ def sta_je_radjeno():
     except ValueError:
         print("Invalid date format")
         return
-
+    
     # Debug output to check date parsing
     print(f"Date Issued: {od}, Deadline: {do}")
-
-    # Define the SQL query with reformatting of rok
+    print(f"Sektor: {sektor}, Klijent filter: {klijent_filter}")
     
-    query = f"""
-    SELECT klijent, mesto, adresa, aktivnost, rok
-    FROM {table_name}
-    WHERE 
-        date(substr(rok, 7, 4) || '-' || substr(rok, 4, 2) || '-' || substr(rok, 1, 2)) >= ? 
-        AND date(substr(rok, 7, 4) || '-' || substr(rok, 4, 2) || '-' || substr(rok, 1, 2)) <= ?
-        AND sektor = ?
-    """
+    # Connect to the SQLite3 database
+    conn = sq.connect("Evidencija.db")
     
-    # Execute the query with the date parameters
-    data = pd.read_sql_query(query, conn, params=[od, do, sektor])
-
-    # Check if data is returned
-    if data.empty:
-        print("No data found for the given date range.")
+    # List of tables to check
+    tables = ["Evidencija2024", "Evidencija2025"]
+    all_data = []
+    
+    for table_name in tables:
+        try:
+            
+            # Define the SQL query with reformatting of rok and client filtering
+            if klijent_filter and klijent_filter.strip():
+                # Query with client filtering (approximate match using LIKE and wildcards)
+                query = f"""
+                SELECT klijent, mesto, adresa, aktivnost, rok
+                FROM {table_name}
+                WHERE
+                    date(substr(rok, 7, 4) || '-' || substr(rok, 4, 2) || '-' || substr(rok, 1, 2)) >= ?
+                    AND date(substr(rok, 7, 4) || '-' || substr(rok, 4, 2) || '-' || substr(rok, 1, 2)) <= ?
+                    AND sektor = ?
+                    AND klijent LIKE ?
+                """
+                params = [od, do, sektor, f"%{klijent_filter}%"]
+            else:
+                # Original query without client filtering
+                query = f"""
+                SELECT klijent, mesto, adresa, aktivnost, rok
+                FROM {table_name}
+                WHERE
+                    date(substr(rok, 7, 4) || '-' || substr(rok, 4, 2) || '-' || substr(rok, 1, 2)) >= ?
+                    AND date(substr(rok, 7, 4) || '-' || substr(rok, 4, 2) || '-' || substr(rok, 1, 2)) <= ?
+                    AND sektor = ?
+                """
+                params = [od, do, sektor]
+            
+            # Execute the query with the parameters
+            data = pd.read_sql_query(query, conn, params=params)
+            
+            if not data.empty:
+                # Add a column to identify which table the data came from
+                data['source_table'] = table_name
+                all_data.append(data)
+                print(f"Data found in {table_name}: {len(data)} rows")
+            else:
+                print(f"No data found in {table_name} for the given criteria.")
+            
+        except Exception as e:
+            print(f"Error accessing table {table_name}: {str(e)}")
+            continue
+    
+    # Combine all data from both tables
+    if all_data:
+        combined_data = pd.concat(all_data, ignore_index=True)
+        print(f"Total combined data: {len(combined_data)} rows")
     else:
-        print(f"Data found: {len(data)} rows")
-
+        print("No data found in any table for the given criteria.")
+        conn.close()
+        return
+    
+    # Remove the source_table column as it's not needed in the final output
+    final_combined_data = combined_data.drop('source_table', axis=1)
+    
+    # Close the database connection
+    conn.close()
+    
     # Ensure the date format is consistent in the DataFrame
-    data['rok'] = pd.to_datetime(data['rok'], format="%d.%m.%Y", dayfirst=True)
-    data['rok'] = data['rok'].dt.strftime("%d.%m.%Y")
-
-    data['aktivnost'] = data['aktivnost'].apply(shorten_activity)
-
-    # Create a pivot table to group activities by 'klijent', 'mesto', and 'Adresa'
-    data['ActivityNum'] = data.groupby(['rok', 'klijent', 'mesto', 'adresa']).cumcount() + 1
-    pivot_data = data.pivot(index=['rok', 'klijent', 'mesto', 'adresa'], columns='ActivityNum', values='aktivnost')
-
-    # Rename the columns to reflect Aktivnost1, Aktivnost2, ...
+    final_combined_data['rok'] = pd.to_datetime(final_combined_data['rok'], format="%d.%m.%Y", dayfirst=True)
+    final_combined_data['rok'] = final_combined_data['rok'].dt.strftime("%d.%m.%Y")
+    final_combined_data['aktivnost'] = final_combined_data['aktivnost'].apply(shorten_activity)
+    
+    # Create a pivot table to group activities by 'klijent', 'mesto', and 'adresa'
+    final_combined_data['ActivityNum'] = final_combined_data.groupby(['rok', 'klijent', 'mesto', 'adresa']).cumcount() + 1
+    pivot_data = final_combined_data.pivot(index=['rok', 'klijent', 'mesto', 'adresa'], columns='ActivityNum', values='aktivnost')
+    
+    # Rename the columns to reflect aktivnost1, aktivnost2, ...
     pivot_data.columns = [f"aktivnost{i}" for i in pivot_data.columns]
-
-    # Reset the index to get 'Klijent', 'Mesto', and 'Adresa' as columns
+    
+    # Reset the index to get 'klijent', 'mesto', and 'adresa' as columns
     final_data = pivot_data.reset_index()
-
+    
     # Save the data to an Excel file
     folder_path1 = r"PERIOD"
-    report_filename = f'{folder_path1}\\izveštaj za period od {parser.parse(od).strftime("%d.%m.%Y")} do {parser.parse(do).strftime("%d.%m.%Y")}_{sektor}.xlsx'
+    
+    # Create filename with client filter info if used
+    client_part = f"_klijent_{klijent_filter}" if klijent_filter and klijent_filter.strip() else ""
+    report_filename = f'{folder_path1}\\izveštaj za period od {parser.parse(od).strftime("%d.%m.%Y")} do {parser.parse(do).strftime("%d.%m.%Y")}_{sektor}{client_part}.xlsx'
+    
     final_data.to_excel(report_filename, index=False)
-    messagebox.showinfo(title="OBAVEŠTENJE", message=f"izveštaj za period od {parser.parse(od).strftime("%d.%m.%Y")} do {parser.parse(do).strftime("%d.%m.%Y")}_{sektor}.xlsx" + " je uspešno formiran")
-    conn.close()
+    
+    # Show success message
+    success_message = f"izveštaj za period od {parser.parse(od).strftime('%d.%m.%Y')} do {parser.parse(do).strftime('%d.%m.%Y')}_{sektor}{client_part}.xlsx je uspešno formiran"
+    messagebox.showinfo(title="OBAVEŠTENJE", message=success_message)
 
 def fetch_imena():
     global imena
@@ -518,8 +569,9 @@ def create_word_nalog(data, headers, br_naloga):
     included_headers = ['KLIJENT', 'MESTO', 'ADRESA', 'AKTIVNOST', 'KONTAKT', 'VOĐA \nTIMA', 'ČLANOVI \nTIMA', 'BR. DOK.', 'PONUDA \nUGOVOR', 'NAPOMENA']
 
     table = doc.add_table(rows=1, cols=len(included_headers), style="Light Grid Accent 5") 
-    table.autofitContent = True
     table.allow_autofitContent = True
+    table.autofitContent = True
+    
 
     hdr_cells = table.rows[0].cells
     set_repeat_table_header(table.rows[0])
