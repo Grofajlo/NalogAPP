@@ -19,8 +19,6 @@ from docx.oxml import OxmlElement
 from docx.shared import RGBColor
 from datetime import date
 
-#STABILNA VERZIJA APLIKACIJE ZA IZDAVANJE NALOGA
-
 current_Y = date.today().year
 
 con = sq.connect("Evidencija.db")
