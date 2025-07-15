@@ -19,6 +19,8 @@ from docx.oxml import OxmlElement
 from docx.shared import RGBColor
 from datetime import date
 
+#STABILNA VERZIJA APLIKACIJE ZA IZDAVANJE NALOGA
+
 current_Y = date.today().year
 
 con = sq.connect("Evidencija.db")
@@ -758,16 +760,18 @@ def edit2():
         adresa = :adresa,
         "BROJ PONUDE / UGOVORA" = :ponuda,
         kontakt = :kontakt,
-        "PUN NAZIV" = :punnaziv
+        "PUN NAZIV" = :punnaziv,
+        "IDrow" = :IDrow      
         
-        WHERE firma = :firma""",
+        WHERE IDrow = :IDrow""",
             {
             "firma" : entry_klijent.get(),
             "mesto" : entry_mesto.get(),
 	        "adresa" : entry_adresa.get(),
 	        "ponuda" : entry_ponuda.get(),
 	        "kontakt" : entry_kontakt.get(),
-	        "punnaziv" : entry_pun_naziv.get()
+	        "punnaziv" : entry_pun_naziv.get(),
+            "IDrow" : identry.get()
 
             })
     
@@ -960,7 +964,7 @@ def lb2():
     task_entry.insert(0, lb2)
 
 def lb3():
-    lb3 = "Pregled i ispitivanje statičkog elektriciteta"
+    lb3 = "Merenje statičkog elektriciteta i otpora uzemljenja"
     task_entry.delete(0, END)
     task_entry.insert(0, lb3)
 
@@ -1247,9 +1251,9 @@ SPI3 =ttkb.Button(spi_tasks_frame, text="SPI - 3", width=6, style="solid toolbut
 SPI4 =ttkb.Button(spi_tasks_frame, text="SPI - 4", width=6, style="solid toolbutton", command=im4).grid(row=1, column=0, padx=8, pady=8)
 SPI5 =ttkb.Button(spi_tasks_frame, text="SPI - 5", width=6, style="solid toolbutton", command=im5).grid(row=1, column=1, padx=8, pady=8)
 SPI6 =ttkb.Button(spi_tasks_frame, text="SPI - 6", width=6, style="solid toolbutton", command=im6).grid(row=1, column=2, padx=8, pady=8)
-SPI7 =ttkb.Button(spi_tasks_frame, text="SPI - 4", width=6, style="solid toolbutton", command=im7).grid(row=2, column=0, padx=8, pady=8)
-SPI5 =ttkb.Button(spi_tasks_frame, text="SPI - 5", width=6, style="solid toolbutton", state="disabled").grid(row=2, column=1, padx=8, pady=8)
-SPI6 =ttkb.Button(spi_tasks_frame, text="SPI - 6", width=6, style="solid toolbutton", state="disabled").grid(row=2, column=2, padx=8, pady=8) 
+SPI7 =ttkb.Button(spi_tasks_frame, text="SPI - 7", width=6, style="solid toolbutton", command=im7).grid(row=2, column=0, padx=8, pady=8)
+SPI5 =ttkb.Button(spi_tasks_frame, text="SPI - 8", width=6, style="solid toolbutton", state="disabled").grid(row=2, column=1, padx=8, pady=8)
+SPI6 =ttkb.Button(spi_tasks_frame, text="SPI - 9", width=6, style="solid toolbutton", state="disabled").grid(row=2, column=2, padx=8, pady=8) 
    
    # in LB frame
 LB1 =ttkb.Button(lb_tasks_frame, text="LB - 1", width=5, style="solid toolbutton", command=lb1).grid(row=0, column=0, padx=8, pady=8)
@@ -1259,8 +1263,8 @@ LB4 =ttkb.Button(lb_tasks_frame, text="LB - 4", width=5, style="solid toolbutton
 LB5 =ttkb.Button(lb_tasks_frame, text="LB - 5", width=5, style="solid toolbutton", state="disabled").grid(row=1, column=1, padx=8, pady=8)
 LB6 =ttkb.Button(lb_tasks_frame, text="LB - 6", width=5, style="solid toolbutton", state="disabled").grid(row=1, column=2, padx=8, pady=8)
 LB7 =ttkb.Button(lb_tasks_frame, text="LB - 7", width=5, style="solid toolbutton", state="disabled").grid(row=2, column=0, padx=8, pady=8)
-LB8 =ttkb.Button(lb_tasks_frame, text="LB - 5", width=5, style="solid toolbutton", state="disabled").grid(row=2, column=1, padx=8, pady=8)
-LB9 =ttkb.Button(lb_tasks_frame, text="LB - 6", width=5, style="solid toolbutton", state="disabled").grid(row=2, column=2, padx=8, pady=8)
+LB8 =ttkb.Button(lb_tasks_frame, text="LB - 8", width=5, style="solid toolbutton", state="disabled").grid(row=2, column=1, padx=8, pady=8)
+LB9 =ttkb.Button(lb_tasks_frame, text="LB - 9", width=5, style="solid toolbutton", state="disabled").grid(row=2, column=2, padx=8, pady=8)
     
     #in tree frame
 scroll = ttkb.Scrollbar(tree_frame, orient="vertical", style="success")
